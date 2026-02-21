@@ -35,7 +35,7 @@ ProMeta is an upcoming JSON-based file that you can put in your repository with 
 
 ## TODO
 
-- [ ] Create the Json Schema
+- [x] Create the Json Schema
 - [ ] Setup this repo to accept contributions
 - [ ] Create an extension for linting and hinting
   - [ ] for VSCode
