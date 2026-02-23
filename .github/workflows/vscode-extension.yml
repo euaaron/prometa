@@ -1,0 +1,200 @@
+name: Release VSCode Extension
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened, closed]
+
+jobs:
+  # ── Phase 1: Runs on every PR push (before merge) ──────────────
+  validate:
+    name: Validate
+    if: github.event.pull_request.merged != true
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Extract and validate version from branch name
+        run: |
+          BRANCH="${{ github.event.pull_request.head.ref }}"
+          SEMVER="${BRANCH#v}"
+          if ! echo "$SEMVER" | grep -qE '^[0-9]+\.[0-9]+\.[0-9]+'; then
+            echo "::error::Branch name '$BRANCH' does not contain a valid semver (expected vX.Y.Z)"
+            exit 1
+          fi
+          echo "Version OK: $SEMVER"
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Copy shared files into extension directory
+        run: |
+          cp LICENSE                extensions/vscode/LICENSE
+          cp schema/prometa.json    extensions/vscode/prometa.schema.json
+
+      - name: Dry-run package
+        working-directory: extensions/vscode
+        run: |
+          BRANCH="${{ github.event.pull_request.head.ref }}"
+          SEMVER="${BRANCH#v}"
+          npm version "$SEMVER" --no-git-tag-version --allow-same-version
+          npm install -g @vscode/vsce
+          vsce package
+          echo "✓ Dry-run package succeeded"
+          rm -f *.vsix
+
+  # ── Phase 2: Runs only after a PR is merged ────────────────────
+  bundle:
+    name: Bundle
+    if: github.event.pull_request.merged == true
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.value }}
+      vsix: ${{ steps.vsix.outputs.filename }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Extract version from branch name
+        id: version
+        run: |
+          BRANCH="${{ github.event.pull_request.head.ref }}"
+          SEMVER="${BRANCH#v}"
+          echo "value=$SEMVER" >> "$GITHUB_OUTPUT"
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Copy shared files into extension directory
+        run: |
+          cp LICENSE                extensions/vscode/LICENSE
+          cp schema/prometa.json    extensions/vscode/prometa.schema.json
+
+      - name: Generate CHANGELOG.md
+        run: |
+          FILE="extensions/vscode/CHANGELOG.md"
+          echo "# Changelog" > "$FILE"
+          echo "" >> "$FILE"
+
+          # Collect version tags (vX.Y.Z) sorted descending
+          TAGS=$(git tag --list 'v*' --sort=-version:refname)
+
+          # Include the new version being released
+          NEW_TAG="v${{ steps.version.outputs.value }}"
+
+          # Build ordered list: new tag first, then existing tags
+          if echo "$TAGS" | grep -qx "$NEW_TAG"; then
+            ALL_TAGS="$TAGS"
+          else
+            ALL_TAGS=$(printf '%s\n%s' "$NEW_TAG" "$TAGS" | grep -v '^$')
+          fi
+
+          PREV="HEAD"
+          for TAG in $ALL_TAGS; do
+            VER="${TAG#v}"
+            echo "## $VER" >> "$FILE"
+            echo "" >> "$FILE"
+
+            if [ "$PREV" = "HEAD" ]; then
+              # Commits from this tag to HEAD (current release)
+              RANGE="${TAG}..HEAD"
+              # If no commits in range, list commits up to the tag itself
+              COUNT=$(git log --oneline "$RANGE" -- 2>/dev/null | wc -l)
+              if [ "$COUNT" -eq 0 ]; then
+                RANGE="$TAG"
+              fi
+            else
+              RANGE="${TAG}..${PREV}"
+            fi
+
+            git log --pretty=format:'- %s' --no-merges "$RANGE" -- >> "$FILE"
+            echo "" >> "$FILE"
+            echo "" >> "$FILE"
+            PREV="$TAG"
+          done
+
+          # Commits before the oldest tag
+          OLDEST=$(echo "$ALL_TAGS" | tail -n1)
+          REMAINING=$(git log --pretty=format:'- %s' --no-merges "$OLDEST" -- 2>/dev/null | wc -l)
+          if [ "$REMAINING" -gt 0 ] && [ "$(echo "$ALL_TAGS" | wc -w)" -eq 1 ]; then
+            # Only one tag — all commits belong to it, already listed
+            true
+          fi
+
+          echo "--- Generated CHANGELOG.md ---"
+          cat "$FILE"
+
+      - name: Create version tag
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git tag "v${{ steps.version.outputs.value }}"
+          git push origin "v${{ steps.version.outputs.value }}"
+
+      - name: Set package version
+        working-directory: extensions/vscode
+        run: npm version "${{ steps.version.outputs.value }}" --no-git-tag-version --allow-same-version
+
+      - name: Package VSIX
+        working-directory: extensions/vscode
+        run: |
+          npm install -g @vscode/vsce
+          vsce package
+
+      - name: Resolve VSIX filename
+        id: vsix
+        working-directory: extensions/vscode
+        run: |
+          VSIX=$(ls *.vsix)
+          echo "filename=$VSIX" >> "$GITHUB_OUTPUT"
+
+      - name: Upload VSIX artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: vsix
+          path: extensions/vscode/${{ steps.vsix.outputs.filename }}
+
+  # ── Phase 3: Publish (parallel, after bundle) ──────────────────
+  publish-github:
+    name: Publish to GitHub Releases
+    needs: bundle
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Download VSIX
+        uses: actions/download-artifact@v4
+        with:
+          name: vsix
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ needs.bundle.outputs.version }}
+          name: v${{ needs.bundle.outputs.version }}
+          generate_release_notes: true
+          files: ${{ needs.bundle.outputs.vsix }}
+
+  publish-marketplace:
+    name: Publish to VS Code Marketplace
+    needs: bundle
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download VSIX
+        uses: actions/download-artifact@v4
+        with:
+          name: vsix
+
+      - name: Publish
+        run: |
+          npm install -g @vscode/vsce
+          vsce publish --packagePath "${{ needs.bundle.outputs.vsix }}"
+        env:
+          VSCE_PAT: ${{ secrets.VSCE_PAT }}
