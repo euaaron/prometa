@@ -1,0 +1,44 @@
+{
+  "name": "prometa",
+  "version": "0.1.0",
+  "displayName": "ProMeta",
+  "description": "Adds support for .prometa files — A JSON-based project metadata with schema validation, autocomplete, and linting.",
+  "publisher": "AaronCarneiro",
+  "categories": [
+    "Other"
+  ],
+  "contributes": {
+    "configurationDefaults": {
+      "files.associations": {
+        "*.prometa": "json"
+      }
+    },
+    "jsonValidation": [
+      {
+        "fileMatch": "*.prometa",
+        "url": "./prometa.schema.json"
+      }
+    ]
+  },
+  "keywords": [
+    "prometa",
+    "json",
+    "metadata",
+    "validator",
+    "linter",
+    "schema"
+  ],
+  "homepage": "https://github.com/euaaron/prometa/extensions/vscode#readme",
+  "bugs": {
+    "url": "https://github.com/euaaron/prometa/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/euaaron/prometa.git"
+  },
+  "license": "CC0-1.0",
+  "author": "Aaron Carneiro (@euaaron)",
+  "engines": {
+    "vscode": "^1.80.0"
+  }
+}

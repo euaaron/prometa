@@ -10,27 +10,37 @@ ProMeta is an upcoming JSON-based file that you can put in your repository with 
 
 > The main goal is to simplify crawling and organize repositories using automation tools to display project's information elsewhere, like in a portfolio page.
 
-### Example of a `.prometa` file
+## Example `.prometa` file
 
 ```json
 {
-  "prometa_version": "0.1.0",  // prometa schema version - default to latest
-  "title": "ProMeta",  // Project title
-  "description": "A project metadata file.",  // Project description
-  "author": { "name": "Aaron Carneiro" },  // Can be authors: [] (array) or a single author (object)
-  "source": "https://github.com/euaaron/prometa",  // Address to the project source code
-  "hosting": {
-    "name": "GitHub",  // Hosting service
-    "public_url": "https://prometa.aaroncarneiro.com",  // Public address to access the project if it is a webapp or webservice.
+  "title": "My Project",
+  "description": "A short description of my project",
+  "source": "https://github.com/user/my-project",
+  "license": "MIT",
+  "author": {
+    "name": "Jane Doe",
+    "email": "jane@example.com"
   },
-  "license": "CC0",
-  "stability":  "experimental",
-  "category": ["portfolio"],  // Project category, it can be Commercial, Learning, Portfolio, Prototype, Open-Source and others (you can use multiple)
-  "keywords": ["schema", "tool", "metadata"]  // Additional keywords you would like to use to simplify searching
+  "category": "open-source",
+  "class": "fullstack",
+  "keywords": ["web", "typescript", "react"],
+  "stability": "experimental"
 }
 ```
 
-> A full definition can be seen in the prometa.schema.json.
+### Required fields
+
+| Field         | Type   | Description                                    |
+| ------------- | ------ | ---------------------------------------------- |
+| `title`       | string | Short project name                             |
+| `description` | string | Short, objective description of the project    |
+| `source`      | string | Canonical repository URL (e.g., GitHub)        |
+| `license`     | string | License identifier (SPDX recommended)          |
+
+### Optional fields
+
+The schema also supports `author`/`authors`, `maintainers`, `website`, `category`, `keywords`, `class`, `compatibility`, `stability`, `related_projects`, `extensions`, `ci`, `learning`, `commercial`, `hosting`, and more. Use autocomplete (`Ctrl+Space`) inside a `.prometa` file to explore all available fields.
 
 
 ## TODO
@@ -38,7 +48,7 @@ ProMeta is an upcoming JSON-based file that you can put in your repository with 
 - [x] Create the Json Schema
 - [ ] Setup this repo to accept contributions
 - [ ] Create an extension for linting and hinting
-  - [ ] for VSCode
+  - [x] for VSCode
   - [ ] for Visual Studio
   - [ ] for IntelliJ
   - [ ] for NeoVIM
