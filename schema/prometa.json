@@ -1,17 +1,12 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://raw.githubusercontent.com/euaaron/prometa/refs/heads/main/schema/prometa.json",
-  "title": "ProMeta Schema",
-  "description": "Schema for .prometa — repository-level project metadata",
+  "title": "ProMeta",
+  "description": "The Project Metadata (ProMeta) file that provides a standardized, extensible format for describing software projects.",
   "type": "object",
   "additionalProperties": false,
   "required": ["title", "description", "source", "license"],
   "properties": {
-    "prometa_version": {
-      "type": "string",
-      "pattern": "^\\d+\\.\\d+\\.\\d+$",
-      "description": "Optional schema version. Absence means validate against latest."
-    },
     "title": {
       "type": "string",
       "minLength": 1,
