@@ -1,0 +1,247 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://raw.githubusercontent.com/euaaron/prometa/refs/heads/main/schema/prometa.json",
+  "title": "ProMeta",
+  "description": "The Project Metadata (ProMeta) file that provides a standardized, extensible format for describing software projects.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["title", "description", "source", "license"],
+  "properties": {
+    "title": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Short project name"
+    },
+    "description": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Short, objective description of the project"
+    },
+    "author": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name"],
+      "properties": {
+        "name": { "type": "string", "minLength": 1 },
+        "email": { "type": "string", "format": "email" },
+        "role": { "type": "string" }
+      },
+      "description": "Single author object (mutually exclusive with authors)"
+    },
+    "authors": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["name"],
+        "properties": {
+          "name": { "type": "string", "minLength": 1 },
+          "email": { "type": "string", "format": "email" },
+          "role": { "type": "string" }
+        }
+      },
+      "description": "Array of author objects (mutually exclusive with author)"
+    },
+    "maintainers": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["name"],
+        "properties": {
+          "name": { "type": "string", "minLength": 1 },
+          "email": { "type": "string", "format": "email" },
+          "role": { "type": "string" }
+        }
+      },
+      "description": "People or teams responsible for ongoing maintenance (optional)"
+    },
+    "source": {
+      "type": "string",
+      "format": "uri",
+      "description": "Canonical repository URL (e.g., GitHub, GitLab)"
+    },
+    "website": {
+      "type": "string",
+      "format": "uri",
+      "description": "Optional public website for the project"
+    },
+    "license": {
+      "type": "string",
+      "minLength": 1,
+      "description": "License identifier; SPDX recommended"
+    },
+    "category": {
+      "oneOf": [
+        {
+          "type": "string",
+          "enum": ["learning", "commercial", "open-source", "government", "internal", "portfolio", "prototype", "other"]
+        },
+        {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": ["learning", "commercial", "open-source", "government", "internal", "portfolio", "prototype", "other"]
+          },
+          "minItems": 1
+        }
+      ],
+      "description": "High-level project category; accepts a single string or an array. Tools should normalize to an array."
+    },
+    "keywords": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 },
+      "description": "Search keywords; prefer lowercase, hyphenated tokens"
+    },
+    "class": {
+      "type": "string",
+      "enum": ["frontend", "backend", "fullstack", "mobile", "embed", "script", "library", "cli", "other"],
+      "description": "Technical classification of the project"
+    },
+    "related_projects": {
+      "type": "array",
+      "items": { "type": "string", "format": "uri" },
+      "description": "URLs of related projects"
+    },
+    "compatibility": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "languages": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Language constraints (e.g., \"python>=3.10\")"
+        },
+        "engines": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Runtimes or platforms (e.g., node, dotnet, jvm)"
+        },
+        "os": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": ["linux", "macos", "windows", "bsd", "android", "ios", "other"]
+          },
+          "description": "Supported operating systems"
+        }
+      }
+    },
+    "stability": {
+      "type": "string",
+      "enum": ["experimental", "stable", "deprecated"],
+      "description": "Project stability level (optional)"
+    },
+    "extensions": {
+      "type": "object",
+      "additionalProperties": true,
+      "description": "Optional vendor/tool-specific metadata. Tools should namespace keys and avoid storing personal data."
+    },
+    "ci": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "build": {
+          "type": "object",
+          "additionalProperties": true,
+          "properties": {
+            "version": { "type": "string", "description": "Build system or artifact version" },
+            "status": {
+              "type": "string",
+              "enum": ["passing", "failing", "unknown", "unstable", "canceled"],
+              "description": "Build status"
+            },
+            "timestamp": { "type": "string", "format": "date-time", "description": "Optional timestamp of last build" }
+          },
+          "description": "Build-related CI information"
+        },
+        "test": {
+          "type": "object",
+          "additionalProperties": true,
+          "properties": {
+            "coverage": { "type": ["string", "number"], "description": "Test coverage (percent or string)" },
+            "score": { "type": "string", "description": "Test score or summary (e.g., \"42/43\")" },
+            "status": {
+              "type": "string",
+              "enum": ["passing", "failing", "breaking", "unknown"],
+              "description": "Test status"
+            },
+            "timestamp": { "type": "string", "format": "date-time", "description": "Optional timestamp of last test run" }
+          },
+          "description": "Test-related CI information"
+        }
+      },
+      "description": "Optional CI summary: structured build and test information. Additional properties allowed for provider-specific data."
+    },
+    "learning": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "mode": {
+          "type": "string",
+          "enum": ["academic", "self-study", "online-course", "tutorial", "book", "workshop", "other"],
+          "description": "Nature of the learning context"
+        },
+        "institution": { "type": "string", "minLength": 1, "description": "Formal institution name when applicable" },
+        "institution_url": { "type": "string", "format": "uri" },
+        "course": { "type": "string", "description": "Course name or discipline" },
+        "subject": { "type": "string", "description": "Subject or module" },
+        "activity_type": { "type": "string", "enum": ["assignment", "homework", "exam", "project", "thesis", "other"] },
+        "activity_title": { "type": "string" },
+        "activity_link": { "type": "string", "format": "uri" },
+        "platform": { "type": "string", "description": "Platform or provider for online learning" },
+        "platform_url": { "type": "string", "format": "uri" },
+        "certificate": { "type": "string", "description": "Certificate identifier or URL if available" },
+        "instructor": { "type": "string", "description": "Instructor or teacher name when applicable" },
+        "start_date": { "type": "string", "format": "date" },
+        "end_date": { "type": "string", "format": "date" },
+        "year": { "type": "integer", "minimum": 1900, "maximum": 2100 },
+        "notes": { "type": "string" }
+      },
+      "description": "Context for learning-driven projects. Use when category includes 'learning'."
+    },
+    "commercial": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "company_name": { "type": "string", "minLength": 1 },
+        "company_website": { "type": "string", "format": "uri" },
+        "employer_project": { "type": "boolean", "description": "True if project was developed as part of employment" },
+        "role": { "type": "string", "description": "Role of the contributor in the commercial context" },
+        "project_link": { "type": "string", "format": "uri", "description": "Link to company project page or public reference" },
+        "contact": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "type": { "type": "string", "enum": ["email", "url", "issue-tracker", "other"] },
+            "value": { "type": "string" }
+          }
+        }
+      },
+      "description": "Optional commercial context: company info and whether project was employer-sponsored"
+    },
+    "hosting": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "type": "string",
+          "enum": ["local", "vercel", "azure", "aws", "heroku", "netlify", "github-pages", "other"],
+          "description": "Hosting provider or 'local' if self-hosted"
+        },
+        "private_url": { "type": "string", "format": "uri", "description": "URL to the hosting control panel or private dashboard" },
+        "public_url": { "type": "string", "format": "uri", "description": "Public URL to access the hosted project (if applicable)" },
+        "region": { "type": "string", "description": "Hosting region or data center (optional)" },
+        "notes": { "type": "string", "description": "Optional notes about hosting or deployment" }
+      },
+      "description": "Optional hosting information: provider, private panel URL and public project URL"
+    }
+  },
+  "oneOf": [
+    { "required": ["author"], "not": { "required": ["authors"] } },
+    { "required": ["authors"], "not": { "required": ["author"] } },
+    { "not": { "required": ["author", "authors"] } }
+  ]
+}
